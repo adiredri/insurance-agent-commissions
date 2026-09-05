@@ -1,3 +1,5 @@
+from pyspark.sql import functions as F
+
 from commissions_pipeline.transformations import fact_commission_transactions
 
 
@@ -28,9 +30,7 @@ def _write_bronze_transactions(spark, tmp_path):
         "commission_rate",
         "commission_amount",
     ]
-    df = spark.createDataFrame(rows, cols).withColumn(
-        "_ingested_at", spark.sql("select current_timestamp()").collect()[0][0]
-    )
+    df = spark.createDataFrame(rows, cols).withColumn("_ingested_at", F.current_timestamp())
     path = f"{tmp_path}/bronze/commission_transactions"
     df.write.format("delta").mode("overwrite").save(path)
     return f"{tmp_path}/bronze"
