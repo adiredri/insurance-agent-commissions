@@ -3,8 +3,10 @@
 #   databricks bundle deploy -t dev
 #   databricks bundle run -t dev commissions_pipeline_job
 #
-# Auth: set DATABRICKS_HOST / DATABRICKS_TOKEN env vars, or pass
-# --var="databricks_host=https://adb-xxxx.azuredatabricks.net" at deploy time.
+# Auth: workspace.host can't be set via bundle variable interpolation (a Databricks
+# CLI restriction on auth fields), so set it via the DATABRICKS_HOST env var, or a
+# CLI profile: `databricks auth login --host https://adb-xxxx.azuredatabricks.net --profile dev`
+# then `databricks bundle deploy -t dev --profile dev`.
 # See: https://docs.databricks.com/dev-tools/bundles/index.html
 bundle:
   name: commissions_pipeline
@@ -13,8 +15,6 @@ include:
   - resources/*.yml
 
 variables:
-  databricks_host:
-    description: Databricks workspace URL
   service_principal_id:
     description: Service principal application ID used for staging/prod CI/CD deployments
   catalog:
@@ -34,15 +34,11 @@ targets:
   dev:
     mode: development
     default: true
-    workspace:
-      host: ${var.databricks_host}
     variables:
       catalog: commissions_dev
 
   staging:
     mode: production
-    workspace:
-      host: ${var.databricks_host}
     variables:
       catalog: commissions_staging
     run_as:
@@ -50,8 +46,6 @@ targets:
 
   prod:
     mode: production
-    workspace:
-      host: ${var.databricks_host}
     variables:
       catalog: commissions_prod
       job_pause_status: UNPAUSED

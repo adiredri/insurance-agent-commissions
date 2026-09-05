@@ -101,7 +101,8 @@ python -m commissions_pipeline.aggregations.run_gold
 ```
 
 Each stage is a separate, idempotent command — re-run any of them independently
-once its upstream input exists.
+once its upstream input exists. Or run all four in one shot with
+`scripts/run_pipeline.sh` (bash) / `scripts/run_pipeline.ps1` (PowerShell).
 
 ## Data quality
 
