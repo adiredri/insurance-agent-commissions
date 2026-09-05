@@ -21,9 +21,9 @@ resource "azurerm_storage_account" "lakehouse" {
   account_tier             = "Standard"
   account_replication_type = var.storage_replication_type
   account_kind             = "StorageV2"
-  is_hns_enabled            = true # hierarchical namespace = ADLS Gen2, not plain blob storage
-  min_tls_version           = "TLS1_2"
-  tags                      = local.tags
+  is_hns_enabled           = true # hierarchical namespace = ADLS Gen2, not plain blob storage
+  min_tls_version          = "TLS1_2"
+  tags                     = local.tags
 }
 
 resource "azurerm_storage_data_lake_gen2_filesystem" "lakehouse" {
