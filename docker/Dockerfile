@@ -1,4 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
+# Pinned to bookworm (Debian 12) rather than the floating "3.11-slim" tag —
+# once that tag rolls to trixie (Debian 13), openjdk-17-jre-headless is gone
+# in favor of openjdk-21, which is untested against this project's Spark version.
 
 # OpenJDK 17 is required by PySpark; this also sidesteps the winutils.exe pain
 # of running Spark natively on Windows — the whole point of using Docker here.

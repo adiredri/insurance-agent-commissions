@@ -479,7 +479,10 @@ def gen_policies_and_transactions(
                         "agent_id": agent_id,
                         "chargeback_date": cancel_date.isoformat(),
                         "chargeback_reason": rng.choice(CHARGEBACK_REASONS),
-                        "chargeback_amount": -round(nb_amount, 2),
+                        # abs() guarantees this stays negative even when nb_amount was itself
+                        # a negative fat-fingered value — a chargeback must always claw back
+                        # (reduce) commission, never add to it.
+                        "chargeback_amount": -abs(round(nb_amount, 2)),
                     }
                 )
                 cb_i += 1
