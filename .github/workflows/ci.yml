@@ -15,8 +15,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff==0.4.2 black==24.4.0
-      - run: ruff check src tests jobs
-      - run: black --check src tests jobs
+      - run: ruff check src tests jobs scripts
+      - run: black --check src tests jobs scripts
 
   test:
     runs-on: ubuntu-latest
@@ -69,15 +69,4 @@ jobs:
           PYTHONPATH=src python -m commissions_pipeline.aggregations.run_gold --silver-dir data/silver --gold-dir data/gold
 
       - name: Fail the build if the DQ log recorded any error-severity failures
-        run: |
-          PYTHONPATH=src python -c "
-          from commissions_pipeline.utils.spark_session import get_spark
-          spark = get_spark('ci-dq-gate')
-          df = spark.read.format('delta').load('data/silver/_dq_log')
-          failed = df.filter('passed = false and severity = \'error\'')
-          count = failed.count()
-          if count > 0:
-              failed.show(truncate=False)
-              raise SystemExit(f'{count} error-severity DQ checks failed')
-          print('All error-severity DQ checks passed')
-          "
+        run: PYTHONPATH=src python scripts/check_dq_gate.py --dq-log-path data/silver/_dq_log
