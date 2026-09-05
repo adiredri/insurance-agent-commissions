@@ -128,17 +128,25 @@ using small in-memory fixtures). GitHub Actions (`.github/workflows/ci.yml`)
 runs lint → unit tests → a full end-to-end smoke test on a small synthetic
 dataset → a DQ gate that fails the build on any error-severity check failure.
 
-## Cloud deployment (optional)
+## Cloud deployment (written, not deployed)
 
-This runs entirely for free locally. To also deploy to Azure for a portfolio
-demo:
+Everything above runs entirely for free, with zero cloud account, and that's
+the actual, proven deliverable — verified end-to-end on GitHub Actions.
 
-1. **Provision infra**: `cd infra/terraform && terraform init && terraform apply -var-file=environments/dev.tfvars` (see [`infra/terraform`](infra/terraform)). Uses OIDC auth in CI — no stored Azure secrets.
-2. **Deploy the pipeline**: `databricks bundle deploy -t dev` (see [`databricks.yml`](databricks.yml)) — creates the scheduled Databricks Job with bronze/silver/gold tasks.
-3. **Tear down** when you're done demoing: `terraform destroy -var-file=environments/dev.tfvars` — avoid ongoing Azure charges.
+[`infra/terraform`](infra/terraform) and [`databricks.yml`](databricks.yml) are
+real, syntactically-validated (`terraform validate` / `databricks bundle
+validate` both pass) infrastructure-as-code for deploying this same pipeline
+to Azure Databricks: ADLS Gen2 for the lakehouse, a Databricks workspace, Key
+Vault for secrets, and a scheduled Databricks Job wired up via
+`.github/workflows/cd-infra.yml` / `cd-databricks.yml` with OIDC auth and a
+required-reviewer approval gate for prod. It's intentionally not deployed —
+every cloud provider's free tier needs a credit card for identity
+verification, and standing up real infra wasn't worth that tradeoff for a
+portfolio project. If you later get access to an Azure subscription:
 
-`.github/workflows/cd-infra.yml` and `cd-databricks.yml` automate both, with a
-required-reviewer GitHub Environment gating anything hitting `prod`.
+1. **Provision infra**: `cd infra/terraform && terraform init && terraform apply -var-file=environments/dev.tfvars`
+2. **Deploy the pipeline**: `databricks bundle deploy -t dev`
+3. **Tear down** when done demoing: `terraform destroy -var-file=environments/dev.tfvars` — avoid ongoing charges
 
 ## License
 
