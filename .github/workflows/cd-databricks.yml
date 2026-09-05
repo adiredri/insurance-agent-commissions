@@ -13,7 +13,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: databricks/setup-cli@main
+      - name: Check Databricks dev credentials
+        id: check-dev-creds
+        env:
+          DATABRICKS_HOST_DEV: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN_DEV: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+        run: |
+          if [ -z "$DATABRICKS_HOST_DEV" ] || [ -z "$DATABRICKS_TOKEN_DEV" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Databricks dev credentials are not configured; skipping deploy-dev."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Deploy bundle to dev
+        if: steps.check-dev-creds.outputs.ready == 'true'
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
