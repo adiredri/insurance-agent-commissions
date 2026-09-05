@@ -1,0 +1,62 @@
+# Databricks Asset Bundle — declarative deployment of this project's jobs/clusters
+# to a Databricks workspace. Deploy with:
+#   databricks bundle deploy -t dev
+#   databricks bundle run -t dev commissions_pipeline_job
+#
+# Auth: set DATABRICKS_HOST / DATABRICKS_TOKEN env vars, or pass
+# --var="databricks_host=https://adb-xxxx.azuredatabricks.net" at deploy time.
+# See: https://docs.databricks.com/dev-tools/bundles/index.html
+bundle:
+  name: commissions_pipeline
+
+include:
+  - resources/*.yml
+
+variables:
+  databricks_host:
+    description: Databricks workspace URL
+  service_principal_id:
+    description: Service principal application ID used for staging/prod CI/CD deployments
+  catalog:
+    description: Unity Catalog catalog to read/write
+    default: commissions_dev
+  lakehouse_root:
+    description: Root path for the medallion layers (a Unity Catalog volume)
+    default: /Volumes/${var.catalog}/default/lakehouse
+  node_type_id:
+    description: Worker node type — small on purpose, this is a portfolio-scale dataset
+    default: Standard_DS3_v2
+  job_pause_status:
+    description: Whether the daily schedule is active — paused by default so only prod runs unattended
+    default: PAUSED
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: ${var.databricks_host}
+    variables:
+      catalog: commissions_dev
+
+  staging:
+    mode: production
+    workspace:
+      host: ${var.databricks_host}
+    variables:
+      catalog: commissions_staging
+    run_as:
+      service_principal_name: ${var.service_principal_id}
+
+  prod:
+    mode: production
+    workspace:
+      host: ${var.databricks_host}
+    variables:
+      catalog: commissions_prod
+      job_pause_status: UNPAUSED
+    run_as:
+      service_principal_name: ${var.service_principal_id}
+    permissions:
+      - group_name: data-engineers
+        level: CAN_MANAGE_RUN

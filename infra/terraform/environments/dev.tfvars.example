@@ -1,0 +1,7 @@
+# Copy to dev.tfvars (gitignored) and fill in / adjust before running:
+#   terraform apply -var-file=environments/dev.tfvars
+
+environment               = "dev"
+location                  = "eastus2"
+storage_replication_type  = "LRS"
+databricks_sku            = "premium" # use "standard" if you just want to poke around without Unity Catalog

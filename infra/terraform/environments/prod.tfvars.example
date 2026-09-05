@@ -1,0 +1,7 @@
+# Copy to prod.tfvars (gitignored) and fill in / adjust before running:
+#   terraform apply -var-file=environments/prod.tfvars
+
+environment               = "prod"
+location                  = "eastus2"
+storage_replication_type  = "GRS" # geo-redundant for prod
+databricks_sku            = "premium"

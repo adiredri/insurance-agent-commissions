@@ -1,0 +1,51 @@
+## Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+## Spark / Delta
+spark-warehouse/
+metastore_db/
+derby.log
+*.crc
+_delta_log/
+
+## Data (generated locally — never commit raw/simulated data, only tiny samples under data/samples)
+data/raw/*
+data/bronze/*
+data/silver/*
+data/gold/*
+!data/raw/.gitkeep
+!data/bronze/.gitkeep
+!data/silver/.gitkeep
+!data/gold/.gitkeep
+
+## Databricks
+.databricks/
+.databricks-login.json
+
+## Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/.terraform.lock.hcl
+infra/terraform/*.tfvars
+!infra/terraform/environments/*.tfvars.example
+
+## Secrets — never commit
+.env
+*.pem
+*.key
+secrets/
+
+## OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

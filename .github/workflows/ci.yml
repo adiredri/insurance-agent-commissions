@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff==0.4.2 black==24.4.0
+      - run: ruff check src tests jobs
+      - run: black --check src tests jobs
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        run: pytest tests/unit -v --cov=src/commissions_pipeline --cov-report=term-missing
+
+  end_to_end_smoke_test:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements-dev.txt
+
+      - name: Generate a small synthetic dataset
+        run: |
+          PYTHONPATH=src python -m commissions_pipeline.ingestion.generate_synthetic_data \
+            --num-agents 50 --num-policies 1000 --years 2 --seed 1 --output-dir data/raw
+
+      - name: Run Bronze -> Silver -> Gold end to end
+        run: |
+          PYTHONPATH=src python -m commissions_pipeline.ingestion.bronze_ingest --raw-dir data/raw --out-dir data/bronze
+          PYTHONPATH=src python -m commissions_pipeline.transformations.run_silver --bronze-dir data/bronze --silver-dir data/silver
+          PYTHONPATH=src python -m commissions_pipeline.aggregations.run_gold --silver-dir data/silver --gold-dir data/gold
+
+      - name: Fail the build if the DQ log recorded any error-severity failures
+        run: |
+          PYTHONPATH=src python -c "
+          from commissions_pipeline.utils.spark_session import get_spark
+          spark = get_spark('ci-dq-gate')
+          df = spark.read.format('delta').load('data/silver/_dq_log')
+          failed = df.filter('passed = false and severity = \'error\'')
+          count = failed.count()
+          if count > 0:
+              failed.show(truncate=False)
+              raise SystemExit(f'{count} error-severity DQ checks failed')
+          print('All error-severity DQ checks passed')
+          "

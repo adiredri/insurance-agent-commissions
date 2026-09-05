@@ -1,0 +1,57 @@
+resources:
+  jobs:
+    commissions_pipeline_job:
+      name: commissions_pipeline_${bundle.target}
+      schedule:
+        quartz_cron_expression: "0 0 5 * * ?" # 05:00 UTC daily
+        timezone_id: UTC
+        pause_status: ${var.job_pause_status}
+
+      job_clusters:
+        - job_cluster_key: main_cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: ${var.node_type_id}
+            num_workers: 1
+            data_security_mode: SINGLE_USER
+            spark_env_vars:
+              LAKEHOUSE_ROOT: ${var.lakehouse_root}
+
+      tasks:
+        - task_key: bronze_ingest
+          job_cluster_key: main_cluster
+          spark_python_task:
+            python_file: ../jobs/bronze_job.py
+            parameters:
+              - --raw-dir
+              - ${var.lakehouse_root}/raw
+              - --out-dir
+              - ${var.lakehouse_root}/bronze
+
+        - task_key: silver_transform
+          depends_on:
+            - task_key: bronze_ingest
+          job_cluster_key: main_cluster
+          spark_python_task:
+            python_file: ../jobs/silver_job.py
+            parameters:
+              - --bronze-dir
+              - ${var.lakehouse_root}/bronze
+              - --silver-dir
+              - ${var.lakehouse_root}/silver
+
+        - task_key: gold_aggregate
+          depends_on:
+            - task_key: silver_transform
+          job_cluster_key: main_cluster
+          spark_python_task:
+            python_file: ../jobs/gold_job.py
+            parameters:
+              - --silver-dir
+              - ${var.lakehouse_root}/silver
+              - --gold-dir
+              - ${var.lakehouse_root}/gold
+
+      email_notifications:
+        on_failure:
+          - data-engineering-alerts@example.com
